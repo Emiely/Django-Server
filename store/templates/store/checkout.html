@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+    <!-- CSS -->
+    <style>
+        .custom-total {
+            margin-right: 20px;
+            background-color: #4f868cbf;
+            text-align: end;
+            border-radius: 10px;
+            padding: 4px 22px 4px 16px;
+        }
+        .custom-makepyment {
+            background-color: #7ba4a9;
+            border: none;
+            border-radius: 10px;
+            float: right;
+            color: #4d4d4d;
+            padding: 6px;
+            font-weight: 500;
+        }
+        .custom-makepyment:hover {
+            border-radius: 0;
+            border: 2px solid #ccc;
+        }
+        .custom-makepyment:focus {
+            outline: 0;
+            border: 2px solid #777;
+        }
+        .clear {
+            clear: both;
+            margin: 0;
+        }
+    </style>
+    <!-- HTML -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="box-element" id="form-wrapper">
+                <form id="form" action="." method="POST"> {% csrf_token %}
+                    <div id="user-info">
+                        <div class="form-field">
+                            <input class="form-control" type="text" name="name" placeholder="Name..">
+                        </div>
+                        <div class="form-field">
+                            <input class="form-control" type="email" name="email" placeholder="Email..">
+                        </div>
+                    </div>
+                    <div id="shipping-info">
+                        <hr>
+                        <p><strong>Shipping Information: </strong></p>
+                        <hr>
+                        <div class="form-field">
+                            <input class="form-control" type="text" name="address" placeholder="Address..">
+                        </div>
+                        <div class="form-field">
+                            <input class="form-control" type="text" name="state" placeholder="State..">
+                        </div>
+                        <div class="form-field">
+                            <input class="form-control" type="text" name="city" placeholder="City..">
+                        </div>
+                        <div class="form-field">
+                            <input class="form-control" type="number" name="zipcode" placeholder="ZIP Code..">
+                        </div>
+                    </div>
+                    <hr>
+                    <input id="form-button" class="btn btn-success btn-block" type="submit" value="Enter and Continue">
+                </form>
+            </div>
+            <br>
+            <div class="box-element hidden" id="payment-info">
+                <p style="display: inline; font-weight: 500;">Paypal Options</p>
+                <button class="custom-makepyment" id="make-payment">Make Payment</button>
+                <p class="clear"></p>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="box-element">
+                <a class="btn btn-outline-dark" href="{% url 'cart' %}">&#x2190;    Back to Cart</a>
+                <hr>
+                <h3 style="text-align: center; ">Order Summary</h3>
+                <hr>
+                {% for item in items %}
+                <div class="cart-row">
+                    <div style="flex: 2"><img class="row-image" src="{{ item.product.imageURL }}" alt="product preview"></div>
+                    <div style="flex: 2"><p>{{ item.product.name }}</p></div>
+                    <div style="flex: 1"><p>${{ item.product.price }}</p></div>
+                    <div style="flex: 1"><p>&times;{{ item.quantity }}</p></div>
+                </div>
+                {% endfor %}
+                <div class="custom-total">
+                    <h5><span style="float: left;">Items:</span> {{ order.get_cart_items }}</h5>
+                    <h5><span style="float: left;">Total:</span> ${{ order.get_cart_total }}</h5>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+    <!-- Javascript -->
+    <script type="text/javascript">
+        var shipping  = '{{ order.need_shipping }}'
+        var cartTotal = '{{ order.get_cart_total }}'
+
+        if (shipping == 'False')
+        {
+            document.getElementById('shipping-info').innerHTML = '' // This removes the whole HTML wrapper.
+        }
+
+        // If the User is a Registered-User => Hide the 'name' & 'email' fields.
+        if (user != 'AnonymousUser')
+        {
+            document.getElementById('user-info').innerHTML = ''
+        }
+        // If the User is Registered-User & the User order items need to be shipped => Hide the whole Form & Show Payment option.
+        if (user != 'AnonymousUser' && shipping == 'False')
+        {
+            document.getElementById('form-wrapper').classList.add('hidden')
+            document.getElementById('payment-info').classList.remove('hidden')
+        }
+
+        var fullForm = document.getElementById('form')
+        fullForm.addEventListener('submit', function(e)
+        {
+            e.preventDefault() // Prevent the Form from being submitted to the Back-End for real.
+            console.log("Not Submitted Yet, Form is being Processed in Front-End...")
+            document.getElementById('form-button').classList.add('hidden')
+            document.getElementById('payment-info').classList.remove('hidden')
+        })
+        document.getElementById('make-payment').addEventListener('click', function(e) // 'e' is a symbol for the event itself (click).
+        {
+            submit_form_data()
+        })
+        function submit_form_data()
+        {
+            console.log("Payment Made Successfully.")
+            /* ---------------------------- Grabbing The User Entries From The Front-End ---------------------------- */
+            // json-1 (Object representation), Javascript object number 1 for 'User Info' data.
+            var userPersonalInfo    = {
+                'name'  : null,
+                'email' : null,
+                'total' : cartTotal
+            }
+            // json-2
+            var shippingAddressInfo = {
+                'address' : null,
+                'state'   : null,
+                'city'    : null,
+                'zipCode' : null
+            }
+
+            // Checking if there is need to send Shipping data to the Back-End.
+            if (shipping != 'False')
+            {
+                shippingAddressInfo.address = fullForm.address.value
+                shippingAddressInfo.state   = fullForm.state.value
+                shippingAddressInfo.city    = fullForm.city.value
+                shippingAddressInfo.zipCode = fullForm.zipcode.value
+            }
+            if (user == 'AnonymousUser') // Remember: 'user' variable is already set in 'base.html' file so we can accesss it.
+            {
+                userPersonalInfo.name  = fullForm.name.value
+                userPersonalInfo.email = fullForm.email.value
+            }
+
+            // Making-Sure everything is working correctly.
+            console.log('User Infos', userPersonalInfo)
+            console.log('Shipping Infos', shippingAddressInfo)
+
+            /* ---------------------------- Sending The User Entries To The Back-End ---------------------------- */
+            // Creating a POST request using 'fetch api'.
+            url = '/process_order/'
+            fetch(url, {
+                method  : 'POST',
+                headers : {
+                    'Content-Type' : 'application/json',
+                    'X-CSRFToken'  : csrftoken
+                },
+                body    : JSON.stringify({'UserInfo' : userPersonalInfo, 'ShippingInfo' : shippingAddressInfo})
+            })
+            .then((response) => response.json()) // Convert the Responsed String to Json String. 
+            // so it can be logged in the Browser's Console (in the next ``.then``)
+            .then((data) => {
+                console.log('success: ', data)
+                alert('Transaction Completed') // Stop all interation with the browser, (Untill the message is dismissed)
+                window.location.href = "{% url 'store' %}" // After dismissing the messsage => Send the User back to our Home Page.
+            })
+        }
+    </script>
+{% endblock %}
