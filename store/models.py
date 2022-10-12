@@ -37,7 +37,7 @@ class Product(models.Model):
             url = ''
         return url
 
-# One Customer can have Many Orders, (Order = Cart = طلبية)
+# One Customer can have Many Orders, (Order = Cart)
 class Order(models.Model):
     #? MANY to ONE Relationship.
     # A Customer can have multiple Orders.
